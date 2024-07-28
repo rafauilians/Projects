@@ -12,3 +12,4 @@ E:\DotNet\jogoDaVelha\jogoDaVelha\obj\Debug\net8.0\refint\jogoDaVelha.dll
 E:\DotNet\jogoDaVelha\jogoDaVelha\obj\Debug\net8.0\jogoDaVelha.pdb
 E:\DotNet\jogoDaVelha\jogoDaVelha\obj\Debug\net8.0\jogoDaVelha.genruntimeconfig.cache
 E:\DotNet\jogoDaVelha\jogoDaVelha\obj\Debug\net8.0\ref\jogoDaVelha.dll
+E:\DotNet\jogoDaVelha\jogoDaVelha\obj\Debug\net8.0\jogoDaVelha.sourcelink.json
