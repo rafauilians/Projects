@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JogoDaVelha
+﻿namespace JogoDaVelha
 {
     class Program
     {
@@ -18,10 +16,17 @@ namespace JogoDaVelha
         private readonly char[] SimbolosJogadores = { 'X', 'O', 'Z' };
 
         private char[,] tabuleiro;
+        private int[] pontuacaoJogadores;
 
         public JogoDaVelha()
         {
             tabuleiro = new char[Tamanho, Tamanho];
+            pontuacaoJogadores = new int[NumJogadores];
+            InicializarTabuleiro();
+        }
+
+        private void InicializarTabuleiro()
+        {
             for (int i = 0; i < Tamanho; i++)
             {
                 for (int j = 0; j < Tamanho; j++)
@@ -33,66 +38,72 @@ namespace JogoDaVelha
 
         public void IniciarJogo()
         {
+            do
+            {
+                InicializarTabuleiro();
+                JogarPartida();
+            } while (true);
+        }
+
+        private void JogarPartida()
+        {
             int jogadorAtual = 0;
             while (true)
             {
                 DesenharTabuleiro();
-                Console.WriteLine($"Jogador {jogadorAtual + 1} ({SimbolosJogadores[jogadorAtual]}), faça sua jogada (ex: A1): ");
-                string jogada = Console.ReadLine().ToUpper();
+                string jogada = SolicitarJogada(jogadorAtual);
 
-                if (jogada.Length == 2 &&
-                    jogada[0] >= 'A' && jogada[0] < 'A' + Tamanho &&
-                    jogada[1] >= '1' && jogada[1] < '1' + Tamanho)
+                if (ProcessarJogada(jogadorAtual, jogada))
                 {
-                    int coluna = jogada[0] - 'A';
-                    int linha = jogada[1] - '1';
-
-                    if (ValidarJogada(linha, coluna))
+                    if (ChecarVitoria(jogadorAtual, jogada))
                     {
-                        FazerJogada(jogadorAtual, linha, coluna);
-
-                        if (ChecarVitoria(jogadorAtual))
-                        {
-                            DesenharTabuleiro();
-                            Console.WriteLine($"Jogador {jogadorAtual + 1} ({SimbolosJogadores[jogadorAtual]}) venceu!");
-                            break;
-                        }
-
-                        jogadorAtual = (jogadorAtual + 1) % NumJogadores;
+                        DesenharTabuleiro();
+                        Console.WriteLine($"Jogador {jogadorAtual + 1} ({SimbolosJogadores[jogadorAtual]}) venceu!");
+                        pontuacaoJogadores[jogadorAtual]++;
+                        MostrarPontuacao();
+                        break;
                     }
-                    else
-                    {
-                        ExibirMensagemErro("Jogada inválida, tente novamente.");
-                    }
+
+                    jogadorAtual = (jogadorAtual + 1) % NumJogadores;
+                }
+            }
+
+            Console.WriteLine("Pressione Enter para reiniciar o jogo...");
+            Console.ReadLine();
+        }
+
+        private string SolicitarJogada(int jogadorAtual)
+        {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine($"Jogador {jogadorAtual + 1} ({SimbolosJogadores[jogadorAtual]}), faça sua jogada (ex: A1): ");
+            return Console.ReadLine().ToUpper();
+        }
+
+        private bool ProcessarJogada(int jogadorAtual, string jogada)
+        {
+            if (jogada.Length == 2 &&
+                jogada[0] >= 'A' && jogada[0] < 'A' + Tamanho &&
+                jogada[1] >= '1' && jogada[1] < '1' + Tamanho)
+            {
+                int coluna = jogada[0] - 'A';
+                int linha = jogada[1] - '1';
+
+                if (ValidarJogada(linha, coluna))
+                {
+                    FazerJogada(jogadorAtual, linha, coluna);
+                    return true;
                 }
                 else
                 {
-                    ExibirMensagemErro("Entrada inválida, tente novamente.");
+                    ExibirMensagemErro("Jogada inválida, tente novamente.");
                 }
             }
-        }
-
-        private void DesenharTabuleiro()
-        {
-            Console.Clear();
-            Console.Write("   ");
-            for (int i = 0; i < Tamanho; i++)
+            else
             {
-                Console.Write($" {Convert.ToChar('A' + i)}  ");
+                ExibirMensagemErro("Entrada inválida, tente novamente.");
             }
-            Console.WriteLine();
-
-            for (int i = 0; i < Tamanho; i++)
-            {
-                Console.Write($"{i + 1} ");
-                for (int j = 0; j < Tamanho; j++)
-                {
-                    Console.Write($" {tabuleiro[i, j]} ");
-                    if (j < Tamanho - 1) Console.Write("|");
-                }
-                Console.WriteLine();
-                if (i < Tamanho - 1) Console.WriteLine("  " + new string('-', Tamanho * 4 - 1));
-            }
+            return false;
         }
 
         private bool ValidarJogada(int linha, int coluna)
@@ -105,68 +116,104 @@ namespace JogoDaVelha
             tabuleiro[linha, coluna] = SimbolosJogadores[jogador];
         }
 
-        private bool ChecarVitoria(int jogador)
+        private bool ChecarVitoria(int jogador, int linha, int coluna)
         {
             char simbolo = SimbolosJogadores[jogador];
+            return ChecarDirecao(linha, coluna, 1, 0, simbolo) || // horizontal
+                   ChecarDirecao(linha, coluna, 0, 1, simbolo) || // vertical
+                   ChecarDirecao(linha, coluna, 1, 1, simbolo) || // diagonal principal
+                   ChecarDirecao(linha, coluna, 1, -1, simbolo);  // diagonal secundária
+        }
 
-            // Checar linhas e colunas
-            for (int i = 0; i < Tamanho; i++)
+        private bool ChecarVitoria(int jogadorAtual, string jogada)
+        {
+            int coluna = jogada[0] - 'A';
+            int linha = jogada[1] - '1';
+            return ChecarVitoria(jogadorAtual, linha, coluna);
+        }
+
+        private bool ChecarDirecao(int linha, int coluna, int deltaLinha, int deltaColuna, char simbolo)
+        {
+            int contagem = 1;
+
+            for (int i = 1; i < 3; i++)
             {
-                if (ChecarLinha(i, simbolo) || ChecarColuna(i, simbolo))
+                int novaLinha = linha + i * deltaLinha;
+                int novaColuna = coluna + i * deltaColuna;
+
+                if (novaLinha >= 0 && novaLinha < Tamanho && novaColuna >= 0 && novaColuna < Tamanho && tabuleiro[novaLinha, novaColuna] == simbolo)
                 {
-                    return true;
+                    contagem++;
+                }
+                else
+                {
+                    break;
                 }
             }
 
-            // Checar diagonais
-            if (ChecarDiagonalPrincipal(simbolo) || ChecarDiagonalSecundaria(simbolo))
+            for (int i = 1; i < 3; i++)
             {
-                return true;
+                int novaLinha = linha - i * deltaLinha;
+                int novaColuna = coluna - i * deltaColuna;
+
+                if (novaLinha >= 0 && novaLinha < Tamanho && novaColuna >= 0 && novaColuna < Tamanho && tabuleiro[novaLinha, novaColuna] == simbolo)
+                {
+                    contagem++;
+                }
+                else
+                {
+                    break;
+                }
             }
 
-            return false;
+            return contagem >= 3;
         }
 
-        private bool ChecarLinha(int linha, char simbolo)
+        private void DesenharTabuleiro()
         {
-            for (int j = 0; j < Tamanho; j++)
-            {
-                if (tabuleiro[linha, j] != simbolo) return false;
-            }
-            return true;
-        }
+            Console.Clear();
+            Console.WriteLine("    A   B   C   D   E  ");
+            Console.WriteLine("  +---+---+---+---+---+");
 
-        private bool ChecarColuna(int coluna, char simbolo)
-        {
             for (int i = 0; i < Tamanho; i++)
             {
-                if (tabuleiro[i, coluna] != simbolo) return false;
+                Console.Write($"{i + 1} |");
+                for (int j = 0; j < Tamanho; j++)
+                {
+                    if (tabuleiro[i, j] == 'X')
+                        Console.ForegroundColor = ConsoleColor.Red;
+                    else if (tabuleiro[i, j] == 'O')
+                        Console.ForegroundColor = ConsoleColor.Green;
+                    else if (tabuleiro[i, j] == 'Z')
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                    else
+                        Console.ResetColor();
+
+                    Console.Write($" {tabuleiro[i, j]} ");
+                    Console.ResetColor();
+                    Console.Write("|");
+                }
+                Console.WriteLine();
+                if (i < Tamanho - 1) Console.WriteLine("  +---+---+---+---+---+");
             }
-            return true;
+
+            Console.WriteLine("  +---+---+---+---+---+");
         }
 
-        private bool ChecarDiagonalPrincipal(char simbolo)
+        private void MostrarPontuacao()
         {
-            for (int i = 0; i < Tamanho; i++)
+            Console.WriteLine("Pontuação Atual:");
+            for (int i = 0; i < NumJogadores; i++)
             {
-                if (tabuleiro[i, i] != simbolo) return false;
+                Console.WriteLine($"Jogador {i + 1} ({SimbolosJogadores[i]}): {pontuacaoJogadores[i]} pontos");
             }
-            return true;
-        }
-
-        private bool ChecarDiagonalSecundaria(char simbolo)
-        {
-            for (int i = 0; i < Tamanho; i++)
-            {
-                if (tabuleiro[i, Tamanho - 1 - i] != simbolo) return false;
-            }
-            return true;
         }
 
         private void ExibirMensagemErro(string mensagem)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine(mensagem);
+            Console.ResetColor();
         }
     }
 }
-
